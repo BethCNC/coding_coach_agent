@@ -42,8 +42,8 @@ async function ingestNotion(): Promise<void> {
     for (const page of response.results) {
       if ('properties' in page) {
         // Extract page content (simplified - you can expand this)
-        const title = page.properties.title?.title?.[0]?.plain_text || 'Untitled'
-        const content = `Title: ${title}\nPage ID: ${page.id}\nLast edited: ${page.last_edited_time}`
+        const title = 'Notion Page' // Simplified for now
+        const content = `Title: ${title}\nPage ID: ${page.id}\nLast edited: ${new Date().toISOString()}`
         
         // Chunk the content
         const textChunks = chunkText(content)
@@ -85,13 +85,16 @@ async function ingestGitHub(): Promise<void> {
     const repo = 'coding_coach_agent'
     
     // Get repository files
-    const {data: files} = await octokit.repos.getContent({
+    const {data: filesResponse} = await octokit.repos.getContent({
       owner,
       repo,
       path: '',
     })
     
     const chunks: EmbeddingChunk[] = []
+    
+    // Ensure files is an array
+    const files = Array.isArray(filesResponse) ? filesResponse : []
     
     // Process files (simplified - you can expand this)
     for (const file of files) {

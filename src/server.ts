@@ -9,6 +9,7 @@ import bodyParser from 'body-parser'
 import {env} from './env.js'
 import {prisma} from './db/client.js'
 import {generateAssistantReply} from './agent/index.js'
+import {summarizeSession} from './agent/summarizer.js'
 
 const app = express()
 app.use(bodyParser.json({limit: '1mb'}))
@@ -23,7 +24,7 @@ app.post('/chat', async (req,res)=>{
     const session = await prisma.session.create({data:{}})
     const sessionId = session.id
     await prisma.message.create({data:{sessionId,role:'user',content:userMessage}})
-    const assistantReply = await generateAssistantReply(userMessage)
+    const assistantReply = await generateAssistantReply(userMessage, sessionId)
     let usedFallback = false
     if(assistantReply.startsWith('Tiny step: create an index.html')){
       // eslint-disable-next-line no-console
@@ -31,6 +32,15 @@ app.post('/chat', async (req,res)=>{
       usedFallback = true
     }
     await prisma.message.create({data:{sessionId,role:'assistant',content:assistantReply}})
+    
+    // Generate summary if session has enough messages (background task)
+    const messageCount = await prisma.message.count({where: {sessionId}})
+    if (messageCount >= 6) { // At least 3 exchanges
+      summarizeSession(sessionId).catch(err => 
+        console.error('summary_background_error', {name: (err as Error).name})
+      )
+    }
+    
     const debug = req.header('x-debug')
     const payload:any = {sessionId,assistantReply}
     if(debug){payload.source = usedFallback ? 'fallback' : 'openai'}
