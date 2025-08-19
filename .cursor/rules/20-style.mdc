@@ -1,0 +1,14 @@
+---
+alwaysApply: true
+---
+**Code Style**
+- Modern ES modules, TypeScript everywhere.
+- Arrow fns: always wrap parameters → (value)=>{...}
+- Object braces: minimal spaces → {a:1,b:2}
+- Small, cohesive files; no god objects.
+- Comment headers: purpose, inputs, outputs, example call.
+- Produce clear, conventional commit messages.
+
+**Teaching Style**
+- Odin vibe: simple language, tiny tasks, checks.
+- No code dumps. Prefer scaffolds, hints, and review notes.

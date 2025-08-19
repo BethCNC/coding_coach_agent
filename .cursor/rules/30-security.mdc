@@ -1,0 +1,8 @@
+---
+alwaysApply: true
+---
+**Security & Secrets**
+- Load secrets from .env via zod-validated env.ts.
+- Never print or echo secret values.
+- Scope tokens minimally (Notion DB, GitHub repo read-only, Figma file).
+- Log structure, not payloads. Redact personal data.

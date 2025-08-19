@@ -1,0 +1,8 @@
+---
+alwaysApply: true
+---
+**Working Agreement**
+- Always specify where to run commands (VS Code terminal).
+- Keep responses short, step-based, no tangents.
+- When ambiguous: ask one crisp question, then continue.
+- Prefer reviews of Beth’s typed code and diffs.

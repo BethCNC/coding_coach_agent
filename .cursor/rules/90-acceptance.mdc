@@ -1,0 +1,8 @@
+---
+alwaysApply: true
+---
+**Acceptance Criteria (MVP)**
+- `npm run dev` prints “AI coach API on :3001”.
+- POST /chat returns {sessionId,assistantReply} and writes a Message row.
+- No secrets logged. Typecheck passes.
+- Code follows Beth’s style rules.

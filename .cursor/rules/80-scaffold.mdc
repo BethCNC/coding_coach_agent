@@ -1,0 +1,12 @@
+---
+alwaysApply: true
+---
+**MVP Milestones (in order)**
+1) Project scaffold + deps + tsconfig + prisma schema.
+2) /chat endpoint: saves/reads messages via Prisma.
+3) Minimal agent loop with policy.ts → OpenAI chat.
+4) pgvector table + vectors.ts (embed, upsert, search).
+5) jobs/ingest.ts for Notion/GitHub/Figma minimal text.
+6) retrieval.ts merges recent|summary|docs.
+7) summarizer.ts writes rolling long-term summaries.
+8) Smoke tests (curl) + readme + .env.example.

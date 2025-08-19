@@ -1,0 +1,7 @@
+---
+alwaysApply: true
+---
+**Progress Model**
+- Skills: html-basics, css-selectors, css-box-model, flex-basics, grid-basics, js-syntax, dom-basics.
+- After each micro-task or quiz: Progress{skillKey,score(0–100),notes}.
+- Weekly/cron: propose 2–3 spaced-repetition reviews for low/stale scores.

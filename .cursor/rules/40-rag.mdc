@@ -1,0 +1,12 @@
+---
+alwaysApply: true
+---
+**RAG Rules**
+- Ingest via jobs/ingest.ts (manual or cron).
+- Chunk ~800–1200 tokens with ~15% overlap.
+- Store in vector_embeddings (VECTOR(3072)); cosine search.
+- At /chat: combine
+  - recent messages (last ~20),
+  - latest long-term summary,
+  - top-k retrieved chunks (k≈8).
+- If context is thin, ask one precise question, then proceed with a safe default.

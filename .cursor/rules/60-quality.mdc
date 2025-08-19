@@ -1,0 +1,11 @@
+---
+alwaysApply: true
+---
+**Quality Gates**
+- For every new module: header with purpose, inputs/outputs, example curl/use.
+- Enforce scripts:
+  - dev: nodemon --exec ts-node src/server.ts
+  - ingest: ts-node src/jobs/ingest.ts
+  - migrate: prisma migrate dev
+  - typecheck: tsc --noEmit
+- Require a short test plan (curl examples) before marking a step “done”.

@@ -2,8 +2,13 @@
   "name": "coding_coach_agent",
   "version": "1.0.0",
   "description": "",
+  "type": "module",
   "main": "index.js",
   "scripts": {
+    "dev": "nodemon --watch src --ext ts,json --exec node --loader ts-node/esm src/server.ts",
+    "ingest": "ts-node src/jobs/ingest.ts",
+    "migrate": "prisma migrate dev",
+    "typecheck": "tsc --noEmit",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

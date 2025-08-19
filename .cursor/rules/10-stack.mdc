@@ -1,0 +1,20 @@
+---
+alwaysApply: true
+---
+**Stack (opinionated)**
+- TypeScript on Node.js
+- Express API (Next.js later if needed)
+- Postgres (Supabase/Render) + pgvector
+- Prisma ORM
+- OpenAI for chat + embeddings (gpt-4.1-mini or better; text-embedding-3-large)
+- Connectors: Notion, GitHub, Figma (official SDKs)
+
+**Directory Layout**
+src/
+  server.ts
+  env.ts
+  agent/{index.ts,policy.ts,retrieval.ts,summarizer.ts}
+  connectors/{notion.ts,github.ts,figma.ts}
+  db/{client.ts,vectors.ts,progress.ts}
+  jobs/{ingest.ts}
+prisma/{schema.prisma}
