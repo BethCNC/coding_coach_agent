@@ -40,8 +40,9 @@ model VectorEmbedding {
   source     String   // notion|github|figma|internal
   sourceId   String   // external identifier
   chunk      String   // text chunk
-  // embedding column added via SQL migration (VECTOR(3072))
+  embedding  String?  // text-embedding-3-large embeddings (JSON array as text for local testing)
   createdAt  DateTime @default(now())
 
+  @@unique([source, sourceId])
   @@index([source, sourceId])
 }

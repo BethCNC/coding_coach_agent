@@ -8,6 +8,7 @@ import express from 'express'
 import bodyParser from 'body-parser'
 import {env} from './env.js'
 import {prisma} from './db/client.js'
+import {generateAssistantReply} from './agent/index.js'
 
 const app = express()
 app.use(bodyParser.json({limit: '1mb'}))
@@ -22,15 +23,18 @@ app.post('/chat', async (req,res)=>{
     const session = await prisma.session.create({data:{}})
     const sessionId = session.id
     await prisma.message.create({data:{sessionId,role:'user',content:userMessage}})
-    let assistantReply = 'Okay.'
-    try{
-      const mod = await import('./agent/index.js')
-      assistantReply = await mod.generateAssistantReply(userMessage)
-    }catch(_err){
-      assistantReply = 'Tiny step: create an index.html with <h1>Hello</h1> in a folder. Then open it in your browser.'
+    const assistantReply = await generateAssistantReply(userMessage)
+    let usedFallback = false
+    if(assistantReply.startsWith('Tiny step: create an index.html')){
+      // eslint-disable-next-line no-console
+      console.error('assistant_fallback_used')
+      usedFallback = true
     }
     await prisma.message.create({data:{sessionId,role:'assistant',content:assistantReply}})
-    res.json({sessionId,assistantReply})
+    const debug = req.header('x-debug')
+    const payload:any = {sessionId,assistantReply}
+    if(debug){payload.source = usedFallback ? 'fallback' : 'openai'}
+    res.json(payload)
   }catch(err){
     // eslint-disable-next-line no-console
     console.error('chat_error', {name:(err as Error).name})
@@ -42,5 +46,8 @@ const port = Number(env.PORT || 3001)
 app.listen(port, ()=>{
   // eslint-disable-next-line no-console
   console.log(`AI coach API on :${port}`)
+  // Safe metadata only; never log secrets
+  // eslint-disable-next-line no-console
+  console.log('openai_key_present', Boolean(env.OPENAI_API_KEY))
 })
 
