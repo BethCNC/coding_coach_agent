@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "prisma generate && tsc --noEmit",
+    "vercel-build": "prisma generate && tsc --noEmit",
     "postinstall": "prisma generate",
     "start": "tsx src/server.ts",
     "ingest": "tsx src/jobs/ingest.ts",
