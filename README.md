@@ -33,7 +33,7 @@ src/
 
 ### Prerequisites
 - Node.js 18+
-- PostgreSQL (local or Supabase)
+- Supabase account and project
 - OpenAI API key
 
 ### Installation
@@ -45,13 +45,19 @@ src/
    npm install
    ```
 
-2. **Set up environment:**
+2. **Set up Supabase database:**
+   - Create a new Supabase project
+   - Go to Settings > Database
+   - Copy the connection strings from the "ORMs" tab
+   - Enable the `pgvector` extension in your database
+
+3. **Set up environment:**
    ```bash
    cp .env.example .env
-   # Edit .env with your OpenAI API key and database URL
+   # Edit .env with your Supabase connection strings and OpenAI API key
    ```
 
-3. **Set up database:**
+4. **Set up database:**
    ```bash
    npm run migrate
    npm run ingest  # Populate with learning materials
@@ -212,8 +218,14 @@ npm start
 
 ### Environment Variables
 ```bash
+# Supabase Prisma Integration
+DATABASE_URL="postgresql://postgres.[YOUR-PROJECT-REF]:[YOUR-PASSWORD]@aws-1-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+DIRECT_URL="postgresql://postgres.[YOUR-PROJECT-REF]:[YOUR-PASSWORD]@aws-1-us-east-1.pooler.supabase.com:5432/postgres"
+
+# OpenAI Configuration
 OPENAI_API_KEY=your_openai_key
-DATABASE_URL=your_postgresql_url
+
+# Optional: External Service Tokens
 NOTION_TOKEN=your_notion_token
 GITHUB_TOKEN=your_github_token
 FIGMA_TOKEN=your_figma_token

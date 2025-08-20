@@ -15,5 +15,10 @@
   "env": {
     "NODE_ENV": "production"
   },
-  "buildCommand": "npm run vercel-build"
+  "buildCommand": "npm run vercel-build",
+  "functions": {
+    "src/server.ts": {
+      "maxDuration": 30
+    }
+  }
 }

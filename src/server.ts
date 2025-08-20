@@ -21,7 +21,33 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 app.use(express.static(path.join(__dirname, '../public')))
 
-app.get('/health', (_req,res)=>{res.json({ok:true})})
+app.get('/ping', (_req,res)=>{res.json({pong: true, timestamp: new Date().toISOString()})})
+
+app.get('/health', async (_req,res)=>{
+  const health = {
+    ok: true,
+    timestamp: new Date().toISOString(),
+    env: {
+      database_url_present: Boolean(env.DATABASE_URL),
+      openai_key_present: Boolean(env.OPENAI_API_KEY)
+    },
+    database: 'unknown',
+    prisma_client: 'unknown'
+  }
+  
+  try {
+    await prisma.$connect()
+    await prisma.session.findFirst()
+    health.database = 'connected'
+    health.prisma_client = 'working'
+  } catch (error) {
+    health.ok = false
+    health.database = `error: ${(error as Error).name}`
+    health.prisma_client = 'failed'
+  }
+  
+  res.json(health)
+})
 
 // Serve the main page
 app.get('/', (_req, res) => {
@@ -60,18 +86,30 @@ app.post('/chat', async (req,res)=>{
     res.json(payload)
   }catch(err){
     // eslint-disable-next-line no-console
-    console.error('chat_error', {name:(err as Error).name})
+    console.error('chat_error', {
+      name: (err as Error).name, 
+      message: (err as Error).message,
+      stack: (err as Error).stack?.split('\n').slice(0, 3).join('\n')
+    })
     res.status(500).json({error:'internal_error'})
   }
 })
 
 const port = Number(env.PORT || 3001)
-app.listen(port, ()=>{
+app.listen(port, async ()=>{
   // eslint-disable-next-line no-console
   console.log(`AI coach API on :${port}`)
   // Safe metadata only; never log secrets
   // eslint-disable-next-line no-console
   console.log('openai_key_present', Boolean(env.OPENAI_API_KEY))
   console.log('database_url_present', Boolean(env.DATABASE_URL))
+  
+  // Test database connection
+  try {
+    await prisma.$connect()
+    console.log('database_connection_success')
+  } catch (error) {
+    console.error('database_connection_failed', {name: (error as Error).name})
+  }
 })
 
