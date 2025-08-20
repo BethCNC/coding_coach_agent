@@ -43,6 +43,9 @@ export const getRecentMessages = async (
   limit: number = 20
 ): Promise<ConversationMessage[]> => {
   try {
+    if (!prisma) {
+      return []
+    }
     const messages = await prisma.message.findMany({
       where: {sessionId},
       orderBy: {createdAt: 'desc'},

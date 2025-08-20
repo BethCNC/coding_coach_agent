@@ -8,8 +8,8 @@ import 'dotenv/config'
 import {z} from 'zod'
 
 const EnvSchema = z.object({
-  DATABASE_URL: z.string().url(),
-  OPENAI_API_KEY: z.string().min(10),
+  DATABASE_URL: z.string().url().optional(),
+  OPENAI_API_KEY: z.string().min(10).optional(),
   NOTION_TOKEN: z.string().optional(),
   NOTION_DATABASE_ID: z.string().optional(),
   GITHUB_TOKEN: z.string().optional(),

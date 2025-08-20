@@ -10,6 +10,9 @@ import {env} from '../env.js'
 
 export const generateAssistantReply = async (userMessage:string, sessionId?:string):Promise<string>=>{
   try{
+    if (!env.OPENAI_API_KEY) {
+      return 'Tiny step: create an index.html with <h1>Hello</h1> in a folder. Then open it in your browser.'
+    }
     const {default: OpenAI} = await import('openai')
     const openai = new OpenAI({apiKey: env.OPENAI_API_KEY})
     const baseSystem = buildSystemPrompt()
