@@ -1,19 +1,37 @@
 /**
- * Purpose: Minimal Express server exposing /chat placeholder.
- * Inputs: HTTP requests
- * Outputs: JSON responses
+ * Purpose: Express server for AI coding coach with file upload and analysis capabilities.
+ * Inputs: HTTP requests, file uploads
+ * Outputs: AI responses, file analysis
  * Example: curl -s http://localhost:3001/health
  */
 import express from 'express'
 import bodyParser from 'body-parser'
+import multer from 'multer'
 import {env} from './env.js'
-import {prisma} from './db/client.js'
 import {generateAssistantReply} from './agent/index.js'
-import {summarizeSession} from './agent/summarizer.js'
+import {storeMessage, getRecentMessages} from './agent/retrieval.js'
 import path from 'path'
 import {fileURLToPath} from 'url'
 
 const app = express()
+
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+    files: 5 // Max 5 files at once
+  },
+  fileFilter: (_req: any, file: any, cb: any) => {
+    // Allow images and PDFs
+    if (file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf') {
+      cb(null, true)
+    } else {
+      cb(new Error('Only images and PDFs are allowed'))
+    }
+  }
+})
+
 app.use(bodyParser.json({limit: '1mb'}))
 
 // Serve static files from public directory
@@ -21,95 +39,107 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 app.use(express.static(path.join(__dirname, '../public')))
 
-app.get('/ping', (_req,res)=>{res.json({pong: true, timestamp: new Date().toISOString()})})
+// Session management for chat history
+const activeSessions = new Map<string, {createdAt: Date, lastActivity: Date}>()
 
-app.get('/health', async (_req,res)=>{
-  const health = {
-    ok: true,
-    timestamp: new Date().toISOString(),
-    env: {
-      database_url_present: Boolean(env.DATABASE_URL),
-      openai_key_present: Boolean(env.OPENAI_API_KEY)
-    },
-    database: 'unknown',
-    prisma_client: 'unknown'
-  }
-  
-  try {
-    await prisma.$connect()
-    await prisma.session.findFirst()
-    health.database = 'connected'
-    health.prisma_client = 'working'
-  } catch (error) {
-    health.ok = false
-    health.database = `error: ${(error as Error).name}`
-    health.prisma_client = 'failed'
-  }
-  
-  res.json(health)
-})
+app.get('/health', (_req,res)=>{res.json({ok:true, mode: 'local-development'})})
 
 // Serve the main page
 app.get('/', (_req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'))
 })
 
-// Placeholder /chat: returns shape required by acceptance; DB wiring in next step
-app.post('/chat', async (req,res)=>{
+// Enhanced /chat endpoint with file upload and analysis
+app.post('/chat', upload.array('files', 5), async (req,res)=>{
   try{
     const userMessage = (req.body && req.body.message) || ''
-    
-    // Create a session on first use for simplicity; in real app, client provides sessionId
-    const session = await prisma.session.create({data:{}})
-    const sessionId = session.id
-    await prisma.message.create({data:{sessionId,role:'user',content:userMessage}})
-    const assistantReply = await generateAssistantReply(userMessage, sessionId)
-    let usedFallback = false
-    if(assistantReply.startsWith('Tiny step: create an index.html')){
-      // eslint-disable-next-line no-console
-      console.error('assistant_fallback_used')
-      usedFallback = true
+    const sessionId = req.body.sessionId || `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    const files = (req as any).files || []
+
+    // Track session activity
+    if (!activeSessions.has(sessionId)) {
+      activeSessions.set(sessionId, {
+        createdAt: new Date(),
+        lastActivity: new Date()
+      })
+    } else {
+      activeSessions.get(sessionId)!.lastActivity = new Date()
     }
-    await prisma.message.create({data:{sessionId,role:'assistant',content:assistantReply}})
-    
-    // Generate summary if session has enough messages (background task)
-    const messageCount = await prisma.message.count({where: {sessionId}})
-    if (messageCount >= 6) { // At least 3 exchanges
-      summarizeSession(sessionId).catch(err => 
-        console.error('summary_background_error', {name: (err as Error).name})
-      )
+
+    // Store user message in the retrieval system
+    storeMessage(sessionId, {
+      role: 'user',
+      content: userMessage,
+      timestamp: new Date()
+    })
+
+    // Generate AI response with file analysis if files are uploaded
+    const assistantReply = await generateAssistantReply(userMessage, sessionId, files)
+
+    // Store assistant message in the retrieval system
+    storeMessage(sessionId, {
+      role: 'assistant',
+      content: assistantReply,
+      timestamp: new Date()
+    })
+
+    // Get recent messages for context (last 10 messages)
+    const recentMessages = await getRecentMessages(sessionId, 10)
+
+    const payload = {
+      sessionId,
+      assistantReply,
+      recentMessages: recentMessages.slice(-6), // Last 3 exchanges for context
+      sessionInfo: {
+        createdAt: activeSessions.get(sessionId)?.createdAt,
+        messageCount: recentMessages.length
+      }
     }
-    
-    const debug = req.header('x-debug')
-    const payload:any = {sessionId,assistantReply}
-    if(debug){payload.source = usedFallback ? 'fallback' : 'openai'}
+
     res.json(payload)
   }catch(err){
     // eslint-disable-next-line no-console
-    console.error('chat_error', {
-      name: (err as Error).name, 
-      message: (err as Error).message,
-      stack: (err as Error).stack?.split('\n').slice(0, 3).join('\n')
-    })
+    console.error('chat_error', {name:(err as Error).name})
     res.status(500).json({error:'internal_error'})
   }
 })
 
+// Get chat history for a session
+app.get('/chat/:sessionId', async (req, res) => {
+  try {
+    const {sessionId} = req.params
+    const recentMessages = await getRecentMessages(sessionId, 50) // Get last 50 messages
+
+    res.json({
+      sessionId,
+      messages: recentMessages,
+      sessionInfo: {
+        createdAt: activeSessions.get(sessionId)?.createdAt,
+        lastActivity: activeSessions.get(sessionId)?.lastActivity,
+        messageCount: recentMessages.length
+      }
+    })
+  } catch (err) {
+    console.error('get_chat_history_error', {name: (err as Error).name})
+    res.status(500).json({error: 'internal_error'})
+  }
+})
+
+// List active sessions
+app.get('/sessions', (_req, res) => {
+  const sessions = Array.from(activeSessions.entries()).map(([sessionId, info]) => ({
+    sessionId,
+    createdAt: info.createdAt,
+    lastActivity: info.lastActivity
+  }))
+
+  res.json({sessions})
+})
+
 const port = Number(env.PORT || 3001)
-app.listen(port, async ()=>{
+app.listen(port, ()=>{
   // eslint-disable-next-line no-console
   console.log(`AI coach API on :${port}`)
-  // Safe metadata only; never log secrets
-  // eslint-disable-next-line no-console
-  console.log('openai_key_present', Boolean(env.OPENAI_API_KEY))
-  console.log('database_url_present', Boolean(env.DATABASE_URL))
-  
-  // Test database connection
-  try {
-    await prisma.$connect()
-    console.log('database_connection_success')
-  } catch (error) {
-    console.error('database_connection_failed', {name: (error as Error).name})
-  }
+  console.log('mode: local-development (with AI integration, chat history, and file analysis)')
 })
 

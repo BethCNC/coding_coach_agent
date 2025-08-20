@@ -47,9 +47,16 @@
             backdrop-filter: blur(5px);
             -webkit-backdrop-filter: blur(5px);
             color: #ffffff;
-            padding: 32px;
+            padding: 24px 32px;
             text-align: center;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-content {
+            flex: 1;
         }
 
         .header h1 {
@@ -63,6 +70,25 @@
             opacity: 0.7;
             font-size: 18px;
             font-weight: 400;
+        }
+
+        .new-chat-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+
+        .new-chat-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.3);
         }
 
         .chat-container {
@@ -164,6 +190,92 @@
             background: #f5f5f5;
             color: #000000;
             border: 1px solid #e5e5e5;
+        }
+
+        .file-upload-area {
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 16px;
+            transition: all 0.2s;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .file-upload-area:hover {
+            border-color: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .file-upload-area.dragover {
+            border-color: #ffffff;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 8px;
+            transition: all 0.2s;
+        }
+
+        .upload-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .file-preview {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 12px;
+            border-radius: 8px;
+            margin: 8px 0;
+        }
+
+        .file-preview img {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        .file-info {
+            flex: 1;
+        }
+
+        .file-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #ffffff;
+        }
+
+        .file-size {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .remove-file {
+            background: rgba(255, 0, 0, 0.2);
+            border: 1px solid rgba(255, 0, 0, 0.3);
+            color: #ff6b6b;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .remove-file:hover {
+            background: rgba(255, 0, 0, 0.3);
         }
 
         .input-container {
@@ -305,7 +417,9 @@
             }
             
             .header {
-                padding: 24px 20px;
+                padding: 20px;
+                flex-direction: column;
+                gap: 16px;
             }
             
             .header h1 {
@@ -358,14 +472,17 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>Coding Coach AI</h1>
-            <p>Your personalized AI tutor for HTML, CSS & JavaScript</p>
+            <div class="header-content">
+                <h1>Coding Coach AI</h1>
+                <p>Your personalized AI tutor for HTML, CSS & JavaScript</p>
+            </div>
+            <button class="new-chat-btn" onclick="startNewChat()">New Chat</button>
         </div>
         
         <div class="chat-container" id="chatContainer">
             <div class="welcome-message">
                 <h3>Welcome to your Coding Coach Beth!</h3>
-                <p>Ask me anything about HTML, CSS, JavaScript, or web development.</p>
+                <p>Ask me anything about HTML, CSS, JavaScript, or web development. You can also upload images and PDFs for analysis!</p>
                 <div class="quick-questions">
                     <div class="quick-question" onclick="askQuestion('How do I center a div?')">Center a div</div>
                     <div class="quick-question" onclick="askQuestion('How do I create a button?')">Create a button</div>
@@ -376,11 +493,19 @@
         </div>
         
         <div class="input-container">
+            <div class="file-upload-area" id="fileUploadArea">
+                <p>📁 Drop files here or <span class="upload-btn" onclick="document.getElementById('fileInput').click()">browse</span></p>
+                <p style="font-size: 12px; opacity: 0.7; margin-top: 8px;">Supports images (PNG, JPG, GIF) and PDFs</p>
+                <input type="file" id="fileInput" class="file-input" accept="image/*,.pdf" multiple>
+            </div>
+            
+            <div id="filePreviews"></div>
+            
             <form class="input-form" id="chatForm">
                 <textarea 
                     class="input-field" 
                     id="messageInput" 
-                    placeholder="Ask me about HTML, CSS, JavaScript, or web development..."
+                    placeholder="Ask me about HTML, CSS, JavaScript, or analyze your uploaded files..."
                     rows="1"
                 ></textarea>
                 <button type="submit" class="send-button" id="sendButton">
@@ -395,8 +520,12 @@
         const chatForm = document.getElementById('chatForm');
         const messageInput = document.getElementById('messageInput');
         const sendButton = document.getElementById('sendButton');
+        const fileInput = document.getElementById('fileInput');
+        const fileUploadArea = document.getElementById('fileUploadArea');
+        const filePreviews = document.getElementById('filePreviews');
         
         let sessionId = null;
+        let uploadedFiles = [];
 
         // Auto-resize textarea
         messageInput.addEventListener('input', function() {
@@ -412,15 +541,134 @@
             }
         });
 
+        // File upload handling
+        fileInput.addEventListener('change', handleFileSelect);
+        
+        // Drag and drop
+        fileUploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileUploadArea.classList.add('dragover');
+        });
+        
+        fileUploadArea.addEventListener('dragleave', () => {
+            fileUploadArea.classList.remove('dragover');
+        });
+        
+        fileUploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileUploadArea.classList.remove('dragover');
+            const files = Array.from(e.dataTransfer.files);
+            handleFiles(files);
+        });
+
+        function handleFileSelect(e) {
+            const files = Array.from(e.target.files);
+            handleFiles(files);
+        }
+
+        function handleFiles(files) {
+            files.forEach(file => {
+                if (file.type.startsWith('image/') || file.type === 'application/pdf') {
+                    uploadedFiles.push(file);
+                    displayFilePreview(file);
+                }
+            });
+        }
+
+        function displayFilePreview(file) {
+            const preview = document.createElement('div');
+            preview.className = 'file-preview';
+            preview.id = `file-${file.name}`;
+            
+            let previewContent = '';
+            
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    previewContent = `
+                        <img src="${e.target.result}" alt="${file.name}">
+                        <div class="file-info">
+                            <div class="file-name">${file.name}</div>
+                            <div class="file-size">${formatFileSize(file.size)}</div>
+                        </div>
+                        <button class="remove-file" onclick="removeFile('${file.name}')">Remove</button>
+                    `;
+                    preview.innerHTML = previewContent;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                previewContent = `
+                    <div style="width: 40px; height: 40px; background: #ff6b6b; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 20px;">📄</div>
+                    <div class="file-info">
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-size">${formatFileSize(file.size)}</div>
+                    </div>
+                    <button class="remove-file" onclick="removeFile('${file.name}')">Remove</button>
+                `;
+                preview.innerHTML = previewContent;
+            }
+            
+            filePreviews.appendChild(preview);
+        }
+
+        function removeFile(fileName) {
+            uploadedFiles = uploadedFiles.filter(file => file.name !== fileName);
+            const preview = document.getElementById(`file-${fileName}`);
+            if (preview) {
+                preview.remove();
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function startNewChat() {
+            // Clear chat
+            chatContainer.innerHTML = `
+                <div class="welcome-message">
+                    <h3>Welcome to your Coding Coach Beth!</h3>
+                    <p>Ask me anything about HTML, CSS, JavaScript, or web development. You can also upload images and PDFs for analysis!</p>
+                    <div class="quick-questions">
+                        <div class="quick-question" onclick="askQuestion('How do I center a div?')">Center a div</div>
+                        <div class="quick-question" onclick="askQuestion('How do I create a button?')">Create a button</div>
+                        <div class="quick-question" onclick="askQuestion('What is flexbox?')">Flexbox basics</div>
+                        <div class="quick-question" onclick="askQuestion('How do I add JavaScript to my page?')">Add JavaScript</div>
+                    </div>
+                </div>
+            `;
+            
+            // Clear files
+            uploadedFiles = [];
+            filePreviews.innerHTML = '';
+            fileInput.value = '';
+            
+            // Reset session
+            sessionId = null;
+            
+            // Focus input
+            messageInput.focus();
+        }
+
         // Handle form submission
         chatForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const message = messageInput.value.trim();
-            if (!message) return;
+            if (!message && uploadedFiles.length === 0) return;
             
             // Add user message to chat
-            addMessage(message, 'user');
+            let displayMessage = message;
+            if (uploadedFiles.length > 0) {
+                const fileNames = uploadedFiles.map(f => f.name).join(', ');
+                displayMessage = `${message ? message + '\n\n' : ''}📎 Attached files: ${fileNames}`;
+            }
+            addMessage(displayMessage, 'user');
+            
             messageInput.value = '';
             messageInput.style.height = 'auto';
             
@@ -428,13 +676,21 @@
             const loadingId = addLoadingMessage();
             
             try {
+                // Prepare form data for file upload
+                const formData = new FormData();
+                formData.append('message', message || 'Analyze these files');
+                if (sessionId) {
+                    formData.append('sessionId', sessionId);
+                }
+                
+                uploadedFiles.forEach(file => {
+                    formData.append('files', file);
+                });
+                
                 // Send message to API
                 const response = await fetch('/chat', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ message }),
+                    body: formData,
                 });
                 
                 const data = await response.json();
@@ -446,6 +702,11 @@
                     // Remove loading and add assistant response
                     removeLoadingMessage(loadingId);
                     addMessage(data.assistantReply, 'assistant');
+                    
+                    // Clear uploaded files after successful send
+                    uploadedFiles = [];
+                    filePreviews.innerHTML = '';
+                    fileInput.value = '';
                 } else {
                     throw new Error('API request failed');
                 }
