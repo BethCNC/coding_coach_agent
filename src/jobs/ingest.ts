@@ -47,14 +47,14 @@ async function ingestNotion(): Promise<void> {
         
         // Try to extract title from various possible property types
         const titleProperty = page.properties.title || page.properties.Name || page.properties.name
-        if (titleProperty && 'title' in titleProperty && titleProperty.title?.[0]?.plain_text) {
+        if (titleProperty && 'title' in titleProperty && Array.isArray(titleProperty.title) && titleProperty.title[0]?.plain_text) {
           title = titleProperty.title[0].plain_text
-        } else if (titleProperty && 'rich_text' in titleProperty && titleProperty.rich_text?.[0]?.plain_text) {
+        } else if (titleProperty && 'rich_text' in titleProperty && Array.isArray(titleProperty.rich_text) && titleProperty.rich_text[0]?.plain_text) {
           title = titleProperty.rich_text[0].plain_text
         }
         
-        // Try to get last edited time
-        if (page.last_edited_time) {
+        // Try to get last edited time - check if it exists on the page object
+        if ('last_edited_time' in page && page.last_edited_time) {
           lastEdited = page.last_edited_time
         }
         
