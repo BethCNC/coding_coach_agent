@@ -12,10 +12,6 @@ async function smokeTest() {
   try {
     // Test 1: Database Connection
     console.log('1️⃣ Testing database connection...')
-    if (!prisma) {
-      console.log('⚠️ Database not available, skipping database tests')
-      return
-    }
     
     await prisma.$connect()
     console.log('✅ Database connection successful')
@@ -115,9 +111,7 @@ async function smokeTest() {
     console.error('\n❌ Smoke test failed:', err)
     process.exit(1)
   } finally {
-    if (prisma) {
-      await prisma.$disconnect()
-    }
+    await prisma.$disconnect()
   }
 }
 

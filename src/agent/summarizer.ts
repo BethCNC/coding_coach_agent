@@ -34,10 +34,6 @@ export interface LearningStyle {
  */
 export const generateSummary = async (sessionId: string): Promise<ConversationSummary | null> => {
   try {
-    if (!prisma) {
-      return null
-    }
-    
     // Get all messages for this session
     const messages = await prisma.message.findMany({
       where: {sessionId},
@@ -244,9 +240,6 @@ function analyzeLearningStyle(messages: any[]): LearningStyle {
  */
 export const storeSummary = async (summary: ConversationSummary): Promise<void> => {
   try {
-    if (!prisma) {
-      return
-    }
     // TODO: Create a Summary table in Prisma schema
     // For now, we'll store it as a system message in the session
     await prisma.message.create({
@@ -266,9 +259,6 @@ export const storeSummary = async (summary: ConversationSummary): Promise<void> 
  */
 export const getLatestSummary = async (sessionId: string): Promise<string | undefined> => {
   try {
-    if (!prisma) {
-      return undefined
-    }
     const summaryMessage = await prisma.message.findFirst({
       where: {
         sessionId,

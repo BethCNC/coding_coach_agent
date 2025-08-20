@@ -33,13 +33,6 @@ app.post('/chat', async (req,res)=>{
   try{
     const userMessage = (req.body && req.body.message) || ''
     
-    // Handle case where database is not available
-    if (!prisma) {
-      const assistantReply = await generateAssistantReply(userMessage)
-      res.json({sessionId: 'no-db', assistantReply})
-      return
-    }
-    
     // Create a session on first use for simplicity; in real app, client provides sessionId
     const session = await prisma.session.create({data:{}})
     const sessionId = session.id
