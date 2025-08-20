@@ -4,6 +4,9 @@
  * Outputs: enriched context combining recent messages and relevant docs
  * Example: const context = await buildContext('How do I center a div?', sessionId)
  */
+import fs from 'fs'
+import path from 'path'
+import {fileURLToPath} from 'url'
 
 export interface RetrievalContext {
   recentMessages: ConversationMessage[]
@@ -32,14 +35,63 @@ export interface SkillProgress {
   notes?: string
 }
 
-// In-memory storage for local development
+// Get the directory for storing data
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+const dataDir = path.join(__dirname, '../../data')
+
+// Ensure data directory exists
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, {recursive: true})
+}
+
+const messagesFile = path.join(dataDir, 'messages.json')
+const sessionsFile = path.join(dataDir, 'sessions.json')
+
+// In-memory storage for local development (with persistence)
 const messageHistory = new Map<string, ConversationMessage[]>()
 
 /**
- * Get recent messages from in-memory storage
+ * Load messages from file on startup
+ */
+function loadMessagesFromFile(): void {
+  try {
+    if (fs.existsSync(messagesFile)) {
+      const data = fs.readFileSync(messagesFile, 'utf8')
+      const parsed = JSON.parse(data)
+      
+      // Convert timestamps back to Date objects
+      Object.keys(parsed).forEach(sessionId => {
+        messageHistory.set(sessionId, parsed[sessionId].map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        })))
+      })
+      
+      console.log(`📁 Loaded ${Object.keys(parsed).length} sessions from disk`)
+    }
+  } catch (err) {
+    console.error('Failed to load messages from file:', err)
+  }
+}
+
+/**
+ * Save messages to file
+ */
+function saveMessagesToFile(): void {
+  try {
+    const data = Object.fromEntries(messageHistory)
+    fs.writeFileSync(messagesFile, JSON.stringify(data, null, 2))
+  } catch (err) {
+    console.error('Failed to save messages to file:', err)
+  }
+}
+
+/**
+ * Get recent messages from persistent storage
  */
 export const getRecentMessages = async (
-  sessionId: string, 
+  sessionId: string,
   limit: number = 20
 ): Promise<ConversationMessage[]> => {
   try {
@@ -52,13 +104,47 @@ export const getRecentMessages = async (
 }
 
 /**
- * Store a message in memory
+ * Store a message in persistent storage
  */
 export const storeMessage = (sessionId: string, message: ConversationMessage): void => {
   if (!messageHistory.has(sessionId)) {
     messageHistory.set(sessionId, [])
   }
   messageHistory.get(sessionId)!.push(message)
+  
+  // Save to file after each message
+  saveMessagesToFile()
+}
+
+/**
+ * Get all sessions with their message counts
+ */
+export const getAllSessions = (): Array<{sessionId: string, messageCount: number, lastActivity: Date}> => {
+  const sessions: Array<{sessionId: string, messageCount: number, lastActivity: Date}> = []
+  
+  messageHistory.forEach((messages, sessionId) => {
+    if (messages.length > 0) {
+      const lastMessage = messages[messages.length - 1]
+      sessions.push({
+        sessionId,
+        messageCount: messages.length,
+        lastActivity: lastMessage.timestamp
+      })
+    }
+  })
+  
+  return sessions.sort((a, b) => b.lastActivity.getTime() - a.lastActivity.getTime())
+}
+
+/**
+ * Delete a session and its messages
+ */
+export const deleteSession = (sessionId: string): boolean => {
+  const deleted = messageHistory.delete(sessionId)
+  if (deleted) {
+    saveMessagesToFile()
+  }
+  return deleted
 }
 
 /**
@@ -97,7 +183,7 @@ export const getRelevantDocuments = async (
         keywords: ['javascript', 'interactive', 'function', 'variable', 'event', 'dom']
       }
     ]
-    
+
     const queryLower = query.toLowerCase()
     const relevantDocs = learningMaterials
       .filter(doc => doc.keywords.some(keyword => queryLower.includes(keyword)))
@@ -108,7 +194,7 @@ export const getRelevantDocuments = async (
         similarity: 0.8, // High similarity for keyword matches
       }))
       .slice(0, limit)
-    
+
     return relevantDocs
   } catch (err) {
     console.error('relevant_docs_error', {name: (err as Error).name})
@@ -123,15 +209,15 @@ export const getConversationSummary = async (sessionId: string): Promise<string 
   try {
     const messages = messageHistory.get(sessionId) || []
     if (messages.length < 4) return undefined
-    
+
     // Simple summary based on recent conversation
     const recentMessages = messages.slice(-6) // Last 6 messages
     const topics = extractTopics(recentMessages)
-    
+
     if (topics.length > 0) {
       return `Recent conversation focused on: ${topics.join(', ')}`
     }
-    
+
     return undefined
   } catch (err) {
     console.error('summary_error', {name: (err as Error).name})
@@ -150,7 +236,7 @@ const extractTopics = (messages: ConversationMessage[]): string[] => {
     'event', 'array', 'object', 'component', 'layout', 'responsive',
     'design', 'system', 'token', 'style', 'color', 'font'
   ]
-  
+
   messages.forEach(msg => {
     const content = msg.content.toLowerCase()
     keywords.forEach(keyword => {
@@ -159,7 +245,7 @@ const extractTopics = (messages: ConversationMessage[]): string[] => {
       }
     })
   })
-  
+
   return Array.from(topics).slice(0, 5) // Limit to 5 topics
 }
 
@@ -170,7 +256,7 @@ export const getSkillProgress = async (sessionId: string): Promise<SkillProgress
   try {
     const messages = messageHistory.get(sessionId) || []
     const topics = extractTopics(messages)
-    
+
     // Simple skill assessment based on conversation topics
     const skills = [
       {skill: 'html-basics', keywords: ['html', 'element', 'structure']},
@@ -179,13 +265,13 @@ export const getSkillProgress = async (sessionId: string): Promise<SkillProgress
       {skill: 'javascript-fundamentals', keywords: ['javascript', 'function', 'variable', 'event']},
       {skill: 'design-systems', keywords: ['design', 'system', 'token', 'component']}
     ]
-    
+
     return skills.map(skill => {
-      const relevantTopics = topics.filter(topic => 
+      const relevantTopics = topics.filter(topic =>
         skill.keywords.some(keyword => topic.includes(keyword))
       )
       const score = Math.min(100, relevantTopics.length * 25) // 25 points per relevant topic
-      
+
       return {
         skill: skill.skill,
         score,
@@ -213,7 +299,7 @@ export const buildContext = async (
       getConversationSummary(sessionId),
       getSkillProgress(sessionId),
     ])
-    
+
     return {
       recentMessages,
       relevantDocs,
@@ -234,12 +320,12 @@ export const buildContext = async (
  */
 export const formatContextForPrompt = (context: RetrievalContext, userMessage: string): string => {
   const parts: string[] = []
-  
+
   // Add conversation summary if available
   if (context.summary) {
     parts.push(`CONVERSATION SUMMARY: ${context.summary}`)
   }
-  
+
   // Add skill progress
   if (context.skillProgress && context.skillProgress.length > 0) {
     const skillSummary = context.skillProgress
@@ -247,7 +333,7 @@ export const formatContextForPrompt = (context: RetrievalContext, userMessage: s
       .join(', ')
     parts.push(`SKILL PROGRESS: ${skillSummary}`)
   }
-  
+
   // Add recent conversation context (last few messages)
   if (context.recentMessages.length > 0) {
     const recentContext = context.recentMessages
@@ -256,7 +342,7 @@ export const formatContextForPrompt = (context: RetrievalContext, userMessage: s
       .join('\n')
     parts.push(`RECENT CONVERSATION:\n${recentContext}`)
   }
-  
+
   // Add relevant documentation
   if (context.relevantDocs.length > 0) {
     const docContext = context.relevantDocs
@@ -265,10 +351,10 @@ export const formatContextForPrompt = (context: RetrievalContext, userMessage: s
       .join('\n\n')
     parts.push(`RELEVANT LEARNING MATERIALS:\n${docContext}`)
   }
-  
+
   // Current user message
   parts.push(`CURRENT QUESTION: ${userMessage}`)
-  
+
   return parts.join('\n\n')
 }
 
@@ -281,7 +367,10 @@ export const needsContextEnrichment = (userMessage: string): boolean => {
     'problem', 'issue', 'error', 'debug', 'fix', 'center',
     'layout', 'style', 'function', 'variable', 'element'
   ]
-  
+
   const message = userMessage.toLowerCase()
   return contextTriggers.some(trigger => message.includes(trigger))
 }
+
+// Load existing messages when module is imported
+loadMessagesFromFile()

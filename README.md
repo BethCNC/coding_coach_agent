@@ -1,247 +1,141 @@
-# Coding Coach AI Agent
+# Coding Coach AI
 
-A personalized AI coding coach that teaches HTML, CSS, and JavaScript using an Odin-style approach: simple explanations, tiny hands-on steps, verification, and progress tracking.
-
-## 🎯 Features
-
-- **Context-Aware Teaching**: Remembers your learning history and adapts explanations
-- **RAG-Powered Responses**: Uses your learning materials and conversation history
-- **Progress Tracking**: Monitors skill development across HTML, CSS, and JavaScript
-- **Personalized Learning**: Adapts to your preferred learning style and pace
-- **Long-term Memory**: Generates summaries to maintain learning continuity
-
-## 🏗️ Architecture
-
-```
-src/
-├── server.ts              # Express API with /chat endpoint
-├── env.ts                 # Environment validation with Zod
-├── agent/
-│   ├── index.ts          # OpenAI-powered response generation
-│   ├── policy.ts         # Teaching style and system prompts
-│   ├── retrieval.ts      # RAG context building
-│   └── summarizer.ts     # Long-term memory summaries
-├── db/
-│   ├── client.ts         # Prisma database client
-│   └── vectors.ts        # Vector embeddings and search
-├── jobs/
-│   └── ingest.ts         # Content ingestion from external sources
-└── test-*.ts             # Test scripts for components
-```
+Your personalized AI tutor for HTML, CSS & JavaScript with persistent memory and file analysis capabilities.
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- Node.js 18+
-- Supabase account and project
-- OpenAI API key
-
-### Installation
-
-1. **Clone and install dependencies:**
-   ```bash
-   git clone <your-repo>
-   cd coding_coach_agent
-   npm install
-   ```
-
-2. **Set up Supabase database:**
-   - Create a new Supabase project
-   - Go to Settings > Database
-   - Copy the connection strings from the "ORMs" tab
-   - Enable the `pgvector` extension in your database
-
-3. **Set up environment:**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your Supabase connection strings and OpenAI API key
-   ```
-
-4. **Set up database:**
-   ```bash
-   npm run migrate
-   npm run ingest  # Populate with learning materials
-   ```
-
-4. **Start the server:**
-   ```bash
-   npm run dev
-   ```
-
-5. **Test the API:**
-   ```bash
-   curl -X POST http://localhost:3001/chat \
-     -H "Content-Type: application/json" \
-     -d '{"message": "How do I center a div?"}'
-   ```
-
-## 📚 API Reference
-
-### POST /chat
-
-Send a message to your coding coach.
-
-**Request:**
-```json
-{
-  "message": "How do I create a button in HTML?"
-}
-```
-
-**Response:**
-```json
-{
-  "sessionId": "cmej3w1bs0000it4jriw7bysm",
-  "assistantReply": "Great to see your progress! Let's create a button in HTML step by step..."
-}
-```
-
-**Headers:**
-- `x-debug: true` - Include source information in response
-
-## 🧪 Testing
-
-### Test Vector Operations
+### Option 1: Simple Startup Script (Recommended)
 ```bash
-npm run test-vectors
+./start-coach.sh
 ```
 
-### Test Summarizer
+### Option 2: Manual Start
 ```bash
-npm run test-summarizer
-```
+# Install dependencies
+npm install
 
-### Type Checking
-```bash
-npm run typecheck
-```
-
-## 🔧 Development
-
-### Available Scripts
-
-- `npm run dev` - Start development server with hot reload
-- `npm run ingest` - Ingest content from Notion, GitHub, and Figma
-- `npm run migrate` - Run database migrations
-- `npm run typecheck` - TypeScript type checking
-- `npm run test-vectors` - Test vector operations
-- `npm run test-summarizer` - Test summarizer functionality
-
-### Database Schema
-
-**Sessions** - Track learning sessions
-```sql
-CREATE TABLE "Session" (
-  "id" TEXT NOT NULL,
-  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY ("id")
-);
-```
-
-**Messages** - Store conversation history
-```sql
-CREATE TABLE "Message" (
-  "id" TEXT NOT NULL,
-  "sessionId" TEXT NOT NULL,
-  "role" TEXT NOT NULL,
-  "content" TEXT NOT NULL,
-  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY ("id")
-);
-```
-
-**VectorEmbeddings** - Store learning materials for RAG
-```sql
-CREATE TABLE "VectorEmbedding" (
-  "id" TEXT NOT NULL,
-  "source" TEXT NOT NULL,
-  "sourceId" TEXT NOT NULL,
-  "chunk" TEXT NOT NULL,
-  "embedding" TEXT,
-  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY ("id")
-);
-```
-
-## 🎓 Teaching Methodology
-
-The coach follows an Odin-style approach:
-
-1. **Simple Explanation** - Clear, jargon-free explanations
-2. **Tiny Hands-On Step** - One small, achievable task at a time
-3. **Verification** - Check understanding before moving forward
-4. **Progress Logging** - Track skills and learning preferences
-
-### Learning Style Adaptation
-
-The system automatically detects and adapts to:
-- **Format Preferences**: Step-by-step, examples, or conceptual explanations
-- **Pace**: Slow, medium, or fast learning speed
-- **Feedback Style**: Detailed, brief, or mixed explanations
-
-## 🔍 RAG System
-
-The Retrieval-Augmented Generation system combines:
-
-1. **Recent Messages** - Last 20 conversation exchanges
-2. **Long-term Summaries** - AI-generated session summaries
-3. **Relevant Documents** - Vector search through learning materials
-4. **Skill Progress** - Current skill levels and learning history
-
-## 📊 Progress Tracking
-
-Skills are tracked across:
-- **HTML Basics** - Elements, structure, semantics
-- **CSS Selectors** - Styling, layout, responsive design
-- **JavaScript Fundamentals** - Variables, functions, DOM manipulation
-- **Advanced Topics** - Flexbox, Grid, APIs, testing
-
-## 🔐 Security
-
-- Environment variables validated with Zod
-- No secrets logged in production
-- Minimal token scopes for external APIs
-- Structured logging without sensitive data
-
-## 🚀 Deployment
-
-### Local Development
-```bash
+# Start the server
 npm run dev
 ```
 
-### Production
-```bash
-npm run build
-npm start
+Then open **http://localhost:3001** in your browser!
+
+## ✨ Features
+
+### 🤖 AI-Powered Learning
+- **Context-aware responses** - Remembers your learning progress
+- **Step-by-step guidance** - Odin-style teaching approach
+- **Skill tracking** - Monitors your progress across topics
+- **Personalized feedback** - Adapts to your learning style
+
+### 📁 File Analysis
+- **Image upload** - Drag & drop images for analysis
+- **Code review** - AI analyzes your HTML/CSS/JS screenshots
+- **Design feedback** - Get suggestions for UI improvements
+- **PDF support** - Upload documentation for analysis
+
+### 💾 Persistent Memory
+- **Chat history** - All conversations saved automatically
+- **Session management** - Multiple learning sessions
+- **Progress tracking** - Skills and topics remembered
+- **Local storage** - Data saved to `./data/` directory
+
+### 🎯 Learning Topics
+- HTML structure and semantics
+- CSS styling and layout (Flexbox, Grid)
+- JavaScript fundamentals and DOM manipulation
+- Design systems and best practices
+- Responsive web design
+- Accessibility principles
+
+## 📁 Data Storage
+
+Your learning data is automatically saved to:
+- `./data/messages.json` - All chat conversations
+- `./data/sessions.json` - Session information
+
+**No data leaves your machine** - everything stays local for privacy!
+
+## 🔧 Development
+
+### Project Structure
+```
+src/
+├── agent/           # AI logic and context building
+├── db/             # Database utilities (for future use)
+├── jobs/           # Background tasks
+└── server.ts       # Express server
+public/
+├── index.html      # Main interface
+└── avatar/         # UI assets
+data/               # Persistent storage (auto-created)
 ```
 
 ### Environment Variables
-```bash
-# Supabase Prisma Integration
-DATABASE_URL="postgresql://postgres.[YOUR-PROJECT-REF]:[YOUR-PASSWORD]@aws-1-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
-DIRECT_URL="postgresql://postgres.[YOUR-PROJECT-REF]:[YOUR-PASSWORD]@aws-1-us-east-1.pooler.supabase.com:5432/postgres"
-
-# OpenAI Configuration
-OPENAI_API_KEY=your_openai_key
-
-# Optional: External Service Tokens
-NOTION_TOKEN=your_notion_token
-GITHUB_TOKEN=your_github_token
-FIGMA_TOKEN=your_figma_token
+Create a `.env.local` file:
+```env
+OPENAI_API_KEY=your_openai_key_here
+PORT=3001
 ```
+
+### Available Scripts
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run typecheck` - Check TypeScript types
+
+## 🎓 How to Use
+
+1. **Start a Session** - Click "New Chat" to begin fresh
+2. **Ask Questions** - Type your coding questions
+3. **Upload Files** - Drag images/PDFs for analysis
+4. **Track Progress** - AI remembers your learning journey
+5. **Get Feedback** - Receive personalized suggestions
+
+## 🔒 Privacy & Security
+
+- **Local-first** - All data stored on your machine
+- **No cloud dependencies** - Works completely offline (except AI responses)
+- **Open source** - Full transparency of code
+- **No tracking** - No analytics or data collection
+
+## 🛠️ Troubleshooting
+
+### Server won't start?
+```bash
+# Check if port 3001 is available
+lsof -i :3001
+
+# Kill any existing processes
+pkill -f "node.*server"
+```
+
+### Data not persisting?
+```bash
+# Check data directory exists
+ls -la data/
+
+# Check file permissions
+chmod 755 data/
+```
+
+### File upload issues?
+- Ensure files are under 10MB
+- Supported formats: PNG, JPG, GIF, PDF
+- Check browser console for errors
+
+## 📈 Learning Path
+
+The AI coach adapts to your progress:
+
+1. **Beginner** - HTML basics, simple styling
+2. **Intermediate** - CSS layout, JavaScript fundamentals
+3. **Advanced** - Design systems, responsive design
+4. **Expert** - Performance, accessibility, best practices
 
 ## 🤝 Contributing
 
-1. Follow the established code style (arrow functions, minimal spacing)
-2. Add TypeScript types for all functions
-3. Include JSDoc comments with purpose, inputs, outputs, and examples
-4. Test your changes with the provided test scripts
+This is a personal learning tool, but suggestions are welcome!
 
-## 📝 License
+## 📄 License
 
-MIT License - see LICENSE file for details.
-
----
-
-**Built with ❤️ for effective coding education**
+MIT License - Feel free to use and modify for your own learning!

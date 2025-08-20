@@ -9,7 +9,7 @@ import bodyParser from 'body-parser'
 import multer from 'multer'
 import {env} from './env.js'
 import {generateAssistantReply} from './agent/index.js'
-import {storeMessage, getRecentMessages} from './agent/retrieval.js'
+import {storeMessage, getRecentMessages, getAllSessions, deleteSession} from './agent/retrieval.js'
 import path from 'path'
 import {fileURLToPath} from 'url'
 
@@ -39,9 +39,6 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 app.use(express.static(path.join(__dirname, '../public')))
 
-// Session management for chat history
-const activeSessions = new Map<string, {createdAt: Date, lastActivity: Date}>()
-
 app.get('/health', (_req,res)=>{res.json({ok:true, mode: 'local-development'})})
 
 // Serve the main page
@@ -55,16 +52,6 @@ app.post('/chat', upload.array('files', 5), async (req,res)=>{
     const userMessage = (req.body && req.body.message) || ''
     const sessionId = req.body.sessionId || `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     const files = (req as any).files || []
-
-    // Track session activity
-    if (!activeSessions.has(sessionId)) {
-      activeSessions.set(sessionId, {
-        createdAt: new Date(),
-        lastActivity: new Date()
-      })
-    } else {
-      activeSessions.get(sessionId)!.lastActivity = new Date()
-    }
 
     // Store user message in the retrieval system
     storeMessage(sessionId, {
@@ -91,7 +78,7 @@ app.post('/chat', upload.array('files', 5), async (req,res)=>{
       assistantReply,
       recentMessages: recentMessages.slice(-6), // Last 3 exchanges for context
       sessionInfo: {
-        createdAt: activeSessions.get(sessionId)?.createdAt,
+        createdAt: recentMessages[0]?.timestamp,
         messageCount: recentMessages.length
       }
     }
@@ -114,8 +101,8 @@ app.get('/chat/:sessionId', async (req, res) => {
       sessionId,
       messages: recentMessages,
       sessionInfo: {
-        createdAt: activeSessions.get(sessionId)?.createdAt,
-        lastActivity: activeSessions.get(sessionId)?.lastActivity,
+        createdAt: recentMessages[0]?.timestamp,
+        lastActivity: recentMessages[recentMessages.length - 1]?.timestamp,
         messageCount: recentMessages.length
       }
     })
@@ -125,21 +112,33 @@ app.get('/chat/:sessionId', async (req, res) => {
   }
 })
 
-// List active sessions
+// List all sessions with persistent data
 app.get('/sessions', (_req, res) => {
-  const sessions = Array.from(activeSessions.entries()).map(([sessionId, info]) => ({
-    sessionId,
-    createdAt: info.createdAt,
-    lastActivity: info.lastActivity
-  }))
-
+  const sessions = getAllSessions()
   res.json({sessions})
+})
+
+// Delete a session
+app.delete('/sessions/:sessionId', (req, res) => {
+  try {
+    const {sessionId} = req.params
+    const deleted = deleteSession(sessionId)
+    
+    if (deleted) {
+      res.json({success: true, message: 'Session deleted'})
+    } else {
+      res.status(404).json({error: 'Session not found'})
+    }
+  } catch (err) {
+    console.error('delete_session_error', {name: (err as Error).name})
+    res.status(500).json({error: 'internal_error'})
+  }
 })
 
 const port = Number(env.PORT || 3001)
 app.listen(port, ()=>{
   // eslint-disable-next-line no-console
   console.log(`AI coach API on :${port}`)
-  console.log('mode: local-development (with AI integration, chat history, and file analysis)')
+  console.log('mode: local-development (with AI integration, chat history, file analysis, and persistent storage)')
 })
 
