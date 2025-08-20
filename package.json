@@ -1,9 +1,9 @@
 {
-  "name": "coding_coach_agent",
+  "name": "coding-coach-agent",
   "version": "1.0.0",
-  "description": "",
+  "description": "AI coding coach with RAG and memory",
+  "main": "src/server.ts",
   "type": "module",
-  "main": "index.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "prisma generate && tsc --noEmit",
@@ -16,29 +16,25 @@
     "smoke-test": "tsx src/smoke-test.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": ["ai", "coding", "coach", "rag", "typescript"],
+  "author": "Beth Cartrette",
+  "license": "MIT",
   "dependencies": {
-    "@notionhq/client": "^4.0.2",
-    "@octokit/rest": "^22.0.0",
     "@prisma/client": "^6.14.0",
-    "body-parser": "^2.2.0",
-    "dotenv": "^17.2.1",
-    "express": "^5.1.0",
-    "figma-js": "^1.16.1-0",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.2",
+    "express": "^5.0.0-beta.3",
+    "figma-js": "^1.16.0",
+    "octokit": "^4.1.0",
     "openai": "^5.12.2",
     "pg": "^8.16.3",
     "pgvector": "^0.2.1",
     "prisma": "^6.14.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@types/express": "^5.0.3",
-    "@types/node": "^24.3.0",
-    "nodemon": "^3.1.10",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.2",
-    "tsx": "^4.7.0"
+    "@types/pg": "^8.11.10"
   }
 }
