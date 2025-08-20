@@ -42,8 +42,8 @@ async function ingestNotion(): Promise<void> {
     for (const page of response.results) {
       if ('properties' in page) {
         // Extract page content (simplified - you can expand this)
-        const title = 'Notion Page' // Simplified for now
-        const content = `Title: ${title}\nPage ID: ${page.id}\nLast edited: ${new Date().toISOString()}`
+        const title = page.properties.title?.title?.[0]?.plain_text || 'Untitled Page'
+        const content = `Title: ${title}\nPage ID: ${page.id}\nLast edited: ${page.last_edited_time || new Date().toISOString()}\n\nThis is content from your Notion workspace. You can expand this to extract actual page content.`
         
         // Chunk the content
         const textChunks = chunkText(content)
@@ -80,25 +80,37 @@ async function ingestGitHub(): Promise<void> {
     const {Octokit} = await import('@octokit/rest')
     const octokit = new Octokit({auth: env.GITHUB_TOKEN})
     
-    // For now, ingest from a specific repo (you can make this configurable)
-    const owner = 'BethCNC'
-    const repo = 'coding_coach_agent'
+    // Ingest from your actual repos (you can add more)
+    const repos = [
+        {owner: 'BethCNC', repo: 'coding_coach_agent'},
+        // Add more of your repos here:
+        // {owner: 'BethCNC', repo: 'another-repo'},
+        // {owner: 'BethCNC', repo: 'project-name'},
+    ]
     
-    // Get repository files
-    const {data: filesResponse} = await octokit.repos.getContent({
-      owner,
-      repo,
-      path: '',
-    })
+    // You can also ingest from other file types
+    const fileExtensions = ['.md', '.txt', '.js', '.ts', '.html', '.css', '.json']
     
     const chunks: EmbeddingChunk[] = []
     
-    // Ensure files is an array
-    const files = Array.isArray(filesResponse) ? filesResponse : []
-    
-    // Process files (simplified - you can expand this)
-    for (const file of files) {
-      if (file.type === 'file' && file.name.endsWith('.md')) {
+    // Process each repository
+    for (const {owner, repo} of repos) {
+      try {
+        console.log(`📁 Processing GitHub repo: ${owner}/${repo}`)
+        
+        // Get repository files
+        const {data: filesResponse} = await octokit.repos.getContent({
+          owner,
+          repo,
+          path: '',
+        })
+        
+        // Ensure files is an array
+        const files = Array.isArray(filesResponse) ? filesResponse : []
+        
+                // Process files (simplified - you can expand this)
+        for (const file of files) {
+          if (file.type === 'file' && fileExtensions.some(ext => file.name.endsWith(ext))) {
         try {
           const {data: content} = await octokit.repos.getContent({
             owner,
@@ -123,6 +135,10 @@ async function ingestGitHub(): Promise<void> {
         }
       }
     }
+  } catch (err) {
+    console.error('github_ingest_error', {name: (err as Error).name, repo: `${owner}/${repo}`})
+  }
+}
     
     if (chunks.length > 0) {
       await upsertChunks(chunks)
@@ -180,6 +196,34 @@ Figma Design System:
  */
 async function ingestInternal(): Promise<void> {
   console.log('📚 Ingesting internal content...')
+  
+  // Read CSS design system files
+  let cssDesignSystemContent = ''
+  let cssBestPracticesContent = ''
+  
+  try {
+    const fs = await import('fs/promises')
+    const path = await import('path')
+    
+    // Read CSS design system documentation
+    const designSystemPath = path.join(process.cwd(), '.cursor', 'css_design_system_documentation.mdc')
+    cssDesignSystemContent = await fs.readFile(designSystemPath, 'utf-8')
+    console.log('✅ Loaded CSS design system documentation')
+  } catch (err) {
+    console.warn('⚠️ Could not load CSS design system documentation:', err)
+  }
+  
+  try {
+    const fs = await import('fs/promises')
+    const path = await import('path')
+    
+    // Read CSS best practices
+    const bestPracticesPath = path.join(process.cwd(), '.cursor', 'css_design_system_best_practices.mdc')
+    cssBestPracticesContent = await fs.readFile(bestPracticesPath, 'utf-8')
+    console.log('✅ Loaded CSS best practices')
+  } catch (err) {
+    console.warn('⚠️ Could not load CSS best practices:', err)
+  }
   
   const internalContent = [
     {
@@ -262,6 +306,21 @@ Modern JavaScript:
       `,
     },
   ]
+  
+  // Add CSS design system content if available
+  if (cssDesignSystemContent) {
+    internalContent.push({
+      title: 'CSS Design System Documentation',
+      content: cssDesignSystemContent,
+    })
+  }
+  
+  if (cssBestPracticesContent) {
+    internalContent.push({
+      title: 'CSS Design System Best Practices',
+      content: cssBestPracticesContent,
+    })
+  }
   
   const chunks: EmbeddingChunk[] = []
   

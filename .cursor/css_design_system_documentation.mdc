@@ -1,0 +1,214 @@
+# 🎨 CSS Design System Documentation
+
+This documentation explains how to build and maintain a **token-driven CSS design system** 
+based on the exported variables and text styles from your Figma design file.  
+It captures your **primitives, alias, mapped tokens, responsive tokens, components, 
+and textStyles.json** into a structured, professional workflow.
+
+---
+
+## 1. Token Architecture
+
+Your tokens are organized into **layers**, each serving a different purpose.
+
+### **Primitives**
+- Raw, hard-coded values (colors, spacing, radii, shadows, fonts).
+- Example:
+  ```css
+  :root {
+    --color-blue-500: #0070f3;
+    --radius-sm: 4px;
+    --spacing-4: 16px;
+  }
+  ```
+
+### **Alias**
+- Map primitives into **meaningful names**.
+- Example:
+  ```css
+  :root {
+    --color-primary: var(--color-blue-500);
+    --color-error: var(--color-red-500);
+    --font-body: "Overused Grotesk", sans-serif;
+    --font-display: "Behind The Nineties";
+  }
+  ```
+
+### **Mapped (Semantic)**
+- What your UI consumes directly (surface, text, border, icon).
+- Example:
+  ```css
+  :root {
+    --surface-primary-default: var(--color-primary);
+    --text-neutral-display: var(--color-neutral-900);
+    --border-focus-ring: var(--color-blue-500);
+  }
+  ```
+
+### **Components**
+- Tokens scoped to components (buttons, inputs, cards), usually size-based (sm, md, lg, xl).
+- Example:
+  ```css
+  :root {
+    --button-radius: var(--radius-sm);
+    --button-padding-md: 8px 16px;
+    --input-padding-sm: 6px 12px;
+  }
+  ```
+
+### **Responsive Tokens**
+- Define breakpoints and layout rules per device.
+- Example:
+  ```css
+  :root {
+    --breakpoint-mobile: 480px;
+    --breakpoint-tablet: 768px;
+    --breakpoint-desktop: 1024px;
+    --spacing-mobile-lg: 24px;
+    --spacing-desktop-lg: 32px;
+  }
+  ```
+
+### **Text Styles (from textStyles.json)**
+- Typography roles with font family, weight, size, line-height.
+- Example:
+  ```css
+  :root {
+    --text-heading-h1-size-mobile: 48px;
+    --text-heading-h1-size-desktop: 96px;
+    --text-heading-h1-lineheight: 1.2;
+    --text-body-md-size: 16px;
+    --text-body-md-lineheight: 1.5;
+  }
+  ```
+
+---
+
+## 2. Utility Classes
+
+Utility classes expose your tokens for **direct use in code**.
+
+### Colors
+```css
+.bg-surface-primary-default {
+  background-color: var(--surface-primary-default);
+}
+
+.text-neutral-display {
+  color: var(--text-neutral-display);
+}
+```
+
+### Radius
+```css
+.rounded-sm { border-radius: var(--radius-sm); }
+.rounded-md { border-radius: var(--radius-md); }
+.rounded-lg { border-radius: var(--radius-lg); }
+```
+
+### Typography
+```css
+.text-heading-h1 {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-h1-size-mobile);
+  line-height: var(--text-heading-h1-lineheight);
+  font-weight: 400;
+}
+
+@media (min-width: var(--breakpoint-desktop)) {
+  .text-heading-h1 {
+    font-size: var(--text-heading-h1-size-desktop);
+  }
+}
+```
+
+---
+
+## 3. Component Classes
+
+Components are **composed from tokens and utilities**.
+
+### Button Example
+```css
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--button-radius);
+  padding: var(--button-padding-md);
+  font: var(--text-body-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.btn-primary {
+  background-color: var(--surface-primary-default);
+  color: var(--text-neutral-inverse);
+}
+
+.btn-primary:hover {
+  background-color: var(--surface-primary-hover);
+}
+
+.btn-primary:disabled {
+  background-color: var(--surface-primary-disabled);
+  color: var(--text-neutral-disabled);
+  cursor: not-allowed;
+}
+```
+
+---
+
+## 4. Responsive Rules
+
+Use responsive tokens to adapt designs at breakpoints.
+
+```css
+@media (min-width: var(--breakpoint-tablet)) {
+  .btn {
+    padding: var(--button-padding-lg);
+  }
+}
+
+@media (min-width: var(--breakpoint-desktop)) {
+  .text-heading-h1 {
+    font-size: var(--text-heading-h1-size-desktop);
+  }
+}
+```
+
+---
+
+## 5. Best Practices
+
+✅ **Always use semantic tokens** (mapped layer) in UI, never raw primitives.  
+✅ **Components should reference tokens, not hard-coded values.**  
+✅ **Utilities are your developer API** — consistent, scalable, and predictable.  
+✅ **Document everything** (colors, typography, components, spacing).  
+✅ **Figma ↔ Code Sync**: When Figma exports update, recompile JSON → CSS tokens.  
+
+---
+
+## 6. Workflow Summary
+
+1. **Figma Variables** → Export JSON (primitives, alias, mapped, responsive, components, text styles).  
+2. **Token Transformation** → Convert JSON → CSS variables.  
+3. **Utilities** → Build `.bg-*`, `.text-*`, `.rounded-*`, etc. from tokens.  
+4. **Components** → Compose utilities + component tokens.  
+5. **Responsive Rules** → Apply breakpoint overrides from responsive tokens.  
+6. **Documentation** → Build a style guide page showing all tokens, utilities, and components in action.  
+
+---
+
+## 7. Example Style Guide Structure
+
+- **Colors**: show surfaces, text, borders, icons.  
+- **Typography**: render each text style.  
+- **Spacing/Radius**: visual scale samples.  
+- **Components**: buttons, inputs, cards with all states.  
+
+---
+
+📌 With this setup, your Figma → JSON → CSS pipeline becomes your **single source of truth**.  
+Every design decision flows from tokens → utilities → components → UI, ensuring **professional, scalable, and maintainable CSS**.

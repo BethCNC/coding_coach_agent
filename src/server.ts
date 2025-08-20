@@ -10,11 +10,23 @@ import {env} from './env.js'
 import {prisma} from './db/client.js'
 import {generateAssistantReply} from './agent/index.js'
 import {summarizeSession} from './agent/summarizer.js'
+import path from 'path'
+import {fileURLToPath} from 'url'
 
 const app = express()
 app.use(bodyParser.json({limit: '1mb'}))
 
+// Serve static files from public directory
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+app.use(express.static(path.join(__dirname, '../public')))
+
 app.get('/health', (_req,res)=>{res.json({ok:true})})
+
+// Serve the main page
+app.get('/', (_req, res) => {
+  res.sendFile(path.join(__dirname, '../public/index.html'))
+})
 
 // Placeholder /chat: returns shape required by acceptance; DB wiring in next step
 app.post('/chat', async (req,res)=>{
