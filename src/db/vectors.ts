@@ -51,6 +51,11 @@ export const embedChunks = async (chunks: string[]): Promise<number[][]> => {
 export const upsertChunks = async (chunks: EmbeddingChunk[]): Promise<void> => {
   if (chunks.length === 0) return
   
+  if (!prisma) {
+    console.warn('Database not available, skipping upsertChunks')
+    return
+  }
+  
   try {
     // Generate embeddings for all chunks
     const texts = chunks.map(c => c.chunk)
@@ -97,6 +102,11 @@ export const searchChunks = async (
   threshold: number = 0.7
 ): Promise<SearchResult[]> => {
   try {
+    if (!prisma) {
+      console.warn('Database not available, returning empty search results')
+      return []
+    }
+    
     // For local testing, use basic text search instead of vector similarity
     const results = await prisma.$queryRaw<SearchResult[]>`
       SELECT 
