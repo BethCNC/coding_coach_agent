@@ -22,7 +22,7 @@ interface IngestConfig {
  */
 async function ingestNotion(): Promise<void> {
   if (!env.NOTION_TOKEN || !env.NOTION_DATABASE_ID) {
-    console.log('⚠️  Notion credentials not configured, skipping...')
+    console.log('⚠️  Notion token or database ID not configured, skipping...')
     return
   }
 
@@ -41,9 +41,24 @@ async function ingestNotion(): Promise<void> {
     
     for (const page of response.results) {
       if ('properties' in page) {
-        // Extract page content (simplified - you can expand this)
-        const title = page.properties.title?.title?.[0]?.plain_text || 'Untitled Page'
-        const content = `Title: ${title}\nPage ID: ${page.id}\nLast edited: ${page.last_edited_time || new Date().toISOString()}\n\nThis is content from your Notion workspace. You can expand this to extract actual page content.`
+        // Extract page content with proper type handling
+        let title = 'Untitled Page'
+        let lastEdited = new Date().toISOString()
+        
+        // Try to extract title from various possible property types
+        const titleProperty = page.properties.title || page.properties.Name || page.properties.name
+        if (titleProperty && 'title' in titleProperty && titleProperty.title?.[0]?.plain_text) {
+          title = titleProperty.title[0].plain_text
+        } else if (titleProperty && 'rich_text' in titleProperty && titleProperty.rich_text?.[0]?.plain_text) {
+          title = titleProperty.rich_text[0].plain_text
+        }
+        
+        // Try to get last edited time
+        if (page.last_edited_time) {
+          lastEdited = page.last_edited_time
+        }
+        
+        const content = `Title: ${title}\nPage ID: ${page.id}\nLast edited: ${lastEdited}\n\nThis is content from your Notion workspace. You can expand this to extract actual page content.`
         
         // Chunk the content
         const textChunks = chunkText(content)
